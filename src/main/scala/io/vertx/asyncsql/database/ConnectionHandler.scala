@@ -149,5 +149,14 @@ trait ConnectionHandler extends ScalaBusMod {
     Ok(result)
   }
 
-  private def rowDataToJsonArray(rowData: RowData): JsonArray = Json.arr(rowData.toList: _*)
+  private def rowDataToJsonArray(rowData: RowData): JsonArray = Json.arr(
+    rowData.toList.map(o =>
+      if (o.isInstanceOf[org.joda.time.LocalDateTime]) {
+        o.toString()
+      } else {
+        o
+      }
+    ): _*
+  )
+
 }
