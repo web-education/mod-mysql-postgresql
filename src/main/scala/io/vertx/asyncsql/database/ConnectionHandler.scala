@@ -123,7 +123,7 @@ trait ConnectionHandler extends ScalaBusMod {
   }
 
   protected def selectCommand(json: JsonObject): String = {
-    val table = escapeField(json.getString("table"))
+    val table = json.getString("table")
     Option(json.getArray("fields")) match {
       case Some(fields) => fields.asScala.toStream.map(elem => escapeField(elem.toString)).mkString("SELECT ", ",", " FROM " + table)
       case None => "SELECT * FROM " + table
@@ -140,7 +140,7 @@ trait ConnectionHandler extends ScalaBusMod {
       line.asInstanceOf[JsonArray].asScala.toStream.map(v => escapeValue(v)).mkString("(", ",", ")")
     }
     new StringBuilder("INSERT INTO ")
-      .append(escapeField(table))
+      .append(table)
       .append(" ")
       .append(fields.map(f => escapeField(f.toString)).mkString("(", ",", ")"))
       .append(" VALUES ")
