@@ -9,6 +9,7 @@ import org.vertx.scala.platform.Verticle
 import com.github.mauricio.async.db.Configuration
 
 import io.vertx.asyncsql.database.{ ConnectionHandler, MySqlConnectionHandler, PostgreSqlConnectionHandler }
+import org.vertx.scala.core.eventbus.Message
 
 class Starter extends Verticle {
 
@@ -34,8 +35,10 @@ class Starter extends Verticle {
       vertx.eventBus.registerHandler(address, handler)
 
       logger.info("Async database module for MySQL and PostgreSQL started with config " + configuration)
-
-      startedResult.success()
+      vertx.eventBus.send(address, Json.obj("action" -> "raw",
+        "command" -> "SELECT count(*) FROM information_schema.tables"), { _:Message[JsonObject] =>
+        startedResult.success()
+      })
     } catch {
       case ex: Throwable =>
         logger.fatal("could not start async database module!", ex)
