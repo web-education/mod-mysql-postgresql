@@ -134,17 +134,20 @@ trait ConnectionHandler extends ScalaBusMod {
     val table = json.getString("table")
     val fields = json.getArray("fields").asScala
     val lines = json.getArray("values").asScala
+    val returning = Option(json.getString("returning"))
     val listOfLines = for {
       line <- lines
     } yield {
       line.asInstanceOf[JsonArray].asScala.toStream.map(v => escapeValue(v)).mkString("(", ",", ")")
     }
-    new StringBuilder("INSERT INTO ")
+    val sb = new StringBuilder("INSERT INTO ")
       .append(table)
       .append(" ")
       .append(fields.map(f => escapeField(f.toString)).mkString("(", ",", ")"))
       .append(" VALUES ")
-      .append(listOfLines.mkString(",")).toString
+      .append(listOfLines.mkString(","))
+    returning.map(c => sb.append(" RETURNING ").append(c))
+    sb.toString()
   }
 
   sealed trait CommandType {
@@ -180,6 +183,12 @@ trait ConnectionHandler extends ScalaBusMod {
               case (fut, cmd) => fut flatMap (_ => cmd.query(conn))
             }
             f map (_ => Ok(Json.obj()))
+            val f = futures.foldLeft(Future[Any]()) { case (fut, cmd) => fut flatMap (_ => cmd.query(conn)) }
+            f map (_ match {
+              case r:QueryResult => buildResults(r)
+              case _ => Ok(Json.obj())
+            }
+            )
         }
         case None => throw new IllegalArgumentException("No 'statements' field in request!")
       }
