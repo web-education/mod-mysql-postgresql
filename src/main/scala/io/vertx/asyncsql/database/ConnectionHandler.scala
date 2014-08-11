@@ -14,6 +14,7 @@ import org.vertx.scala.platform.Container
 import io.vertx.asyncsql.Starter
 import org.vertx.scala.mods.ScalaBusMod.Receive
 import scala.util.{Failure, Success}
+import scala.collection.mutable.ListBuffer
 
 trait ConnectionHandler extends ScalaBusMod {
   val verticle: Starter
@@ -168,6 +169,12 @@ trait ConnectionHandler extends ScalaBusMod {
 
       Option(json.getArray("statements")) match {
         case Some(statements) => c.inTransaction {
+          def appendResult(result: Any, results: ListBuffer[JsonObject]) {
+            results.append(result match {
+              case r: QueryResult => buildResults(r).toJson
+              case _ => Json.obj()
+            })
+            }
           conn: Connection =>
             val futures = statements.asScala.map {
               case js: JsonObject =>
@@ -179,16 +186,18 @@ trait ConnectionHandler extends ScalaBusMod {
                 }
               case _ => throw new IllegalArgumentException("'statements' needs JsonObjects!")
             }
-            val f = futures.foldLeft(Future[Any]()) {
-              case (fut, cmd) => fut flatMap (_ => cmd.query(conn))
+            val results = ListBuffer[JsonObject]()
+            val f = futures.foldLeft(Future[Any]()) { case (fut, cmd) =>
+              fut flatMap {result =>
+                appendResult(result, results)
+                cmd.query(conn)
             }
-            f map (_ => Ok(Json.obj()))
-            val f = futures.foldLeft(Future[Any]()) { case (fut, cmd) => fut flatMap (_ => cmd.query(conn)) }
-            f map (_ match {
-              case r:QueryResult => buildResults(r)
-              case _ => Ok(Json.obj())
+              }
+
+              f map {result =>
+                appendResult(result, results)
+                Ok(Json.obj("results" -> results.tail))
             }
-            )
         }
         case None => throw new IllegalArgumentException("No 'statements' field in request!")
       }
