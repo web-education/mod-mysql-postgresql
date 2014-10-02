@@ -98,7 +98,10 @@ trait ConnectionHandler extends ScalaBusMod {
       case Some(statements) => c.inTransaction {
         def appendResult(result: Any, results: ListBuffer[JsonObject]) {
           results.append(result match {
-            case r: QueryResult => buildResults(r).toJson
+            case r: QueryResult =>
+              val res = buildResults(r).toJson
+              logger.debug(res)
+              res
             case _ => Json.obj()
           })
         }
