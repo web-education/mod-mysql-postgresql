@@ -243,6 +243,8 @@ trait ConnectionHandler extends ScalaBusMod {
         result.putArray("fields", fields)
         result.putArray("results", rows)
       case None =>
+        result.putArray("fields", Json.emptyArr())
+        result.putArray("results", Json.emptyArr())
     }
 
     Ok(result)
