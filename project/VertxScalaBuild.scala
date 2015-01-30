@@ -16,7 +16,7 @@ object Variables {
   val hamcrestVersion = "1.3"
   val junitInterfaceVersion = "0.10"
   val vertxLangScalaVersion = "1.1.0-M1"
-  val asyncDriverVersion = "0.2.15"
+  val asyncDriverVersion = "0.2.16"
 
   val pomExtra =
     <inceptionYear>2013</inceptionYear>
